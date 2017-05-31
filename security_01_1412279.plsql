@@ -5,7 +5,7 @@ grant execute on dbms_crypto to quantri;
 --1. tao package co chua 2 ham encrypt/decrypt
 CREATE OR REPLACE PACKAGE CRYPT01 IS
   FUNCTION ENCRYPT_LUONG(p_data IN varchar2,key_01 IN VARCHAR2) RETURN RAW DETERMINISTIC;
-  FUNCTION DECRYPT_LUONG(p_data IN RAW,key_01 IN VARCHAR2) RETURN NUMBER DETERMINISTIC;
+  FUNCTION DECRYPT_LUONG(p_data IN RAW,key_01 IN VARCHAR2) RETURN VARCHAR2 DETERMINISTIC;
 END CRYPT01;
 
 
@@ -27,7 +27,7 @@ CREATE OR REPLACE PACKAGE BODY CRYPT01 IS
       return encrypted_raw;
   END ENCRYPT_LUONG;
   
-  FUNCTION DECRYPT_LUONG(p_data IN RAW,key_01 IN VARCHAR2) RETURN NUMBER DETERMINISTIC
+  FUNCTION DECRYPT_LUONG(p_data IN RAW,key_01 IN VARCHAR2) RETURN VARCHAR2 DETERMINISTIC
   IS
     decrypted_raw raw(2000);
     result varchar2(50);
@@ -38,11 +38,12 @@ CREATE OR REPLACE PACKAGE BODY CRYPT01 IS
           typ => encryption_type,
           key => utl_raw.cast_to_raw(key_01)
       );
-      result :=utl_raw.cast_to_varchar2(decrypted_raw);
-      
+      result := utl_raw.cast_to_varchar2(decrypted_raw);
+      return result;
   END DECRYPT_LUONG;
 END CRYPT01;
 
+show errors;
 --3: update table Nhanvien
 UPDATE NHANVIEN SET LUONG=CRYPT01.ENCRYPT_LUONG(LUONG,MANV||MANV);
 
@@ -62,13 +63,16 @@ begin
   select luong into result
   from quantri.nhanvien where maNV=v_user;
   luong2 := CRYPT01.DECRYPT_LUONG(result,v_user||v_user);
-  DBMS_OUTPUT.PUT_LINE('luong'||luong2);
+  DBMS_OUTPUT.PUT_LINE('luong: '||luong2);
 end luongcanhan;
 
 
 
 
-exec luongcanhan;
+
 set serveroutput on;
-grant execute on luongcanhan to nv19;
-grant execute on quantri.crypt01 to nv19;
+grant execute on luongcanhan to nv19,nv20;
+grant execute on quantri.crypt01 to nv19,nv20;
+
+--[conn nv19]
+exec luongcanhan;
